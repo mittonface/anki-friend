@@ -1,0 +1,10 @@
+{{ define "main" }}
+  {{ .Content }}
+  <h2>Decks</h2>
+  {{ range .Site.Sections }}
+    <section class="deck">
+      <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+      <p>{{ len .Pages }} cards</p>
+    </section>
+  {{ end }}
+{{ end }}

@@ -1,0 +1,10 @@
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+  {{ range .Pages }}
+    <section class="card-preview{{ if .Params.difficult }} difficult{{ end }}">
+      <h2><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ if .Params.difficult }} <span class="difficult-badge">Needs Work</span>{{ end }}</h2>
+      {{ .Summary }}
+    </section>
+  {{ end }}
+{{ end }}

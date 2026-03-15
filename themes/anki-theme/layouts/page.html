@@ -1,0 +1,7 @@
+{{ define "main" }}
+  <article class="card{{ if .Params.difficult }} difficult{{ end }}">
+    <h1>{{ .Title }}{{ if .Params.difficult }} <span class="difficult-badge">Needs Work</span>{{ end }}</h1>
+    {{ .Content }}
+    {{ partial "terms.html" (dict "taxonomy" "tags" "page" .) }}
+  </article>
+{{ end }}
