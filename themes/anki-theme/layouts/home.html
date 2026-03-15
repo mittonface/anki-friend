@@ -1,10 +1,75 @@
 {{ define "main" }}
-  {{ .Content }}
-  <h2>Decks</h2>
-  {{ range .Site.Sections }}
-    <section class="deck">
-      <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
-      <p>{{ len .Pages }} cards</p>
-    </section>
-  {{ end }}
+  <div class="dashboard">
+    <div class="controls">
+      <input type="text" id="search" placeholder="Search cards..." autocomplete="off">
+      <div class="filters">
+        <button class="filter-btn active" data-filter="struggling">Needs Work</button>
+        <button class="filter-btn" data-filter="all">All Cards</button>
+        {{- range .Site.Sections }}
+        <button class="filter-btn" data-filter="deck:{{ .File.ContentBaseName }}">{{ .Title }}</button>
+          {{- range .Sections }}
+        <button class="filter-btn" data-filter="deck:{{ .File.ContentBaseName }}">{{ .Title }}</button>
+          {{- end }}
+        {{- end }}
+      </div>
+    </div>
+
+    <div id="card-list">
+      {{/* Collect all leaf pages across all sections */}}
+      {{- $allPages := slice }}
+      {{- range .Site.Sections }}
+        {{- $allPages = $allPages | append .RegularPages }}
+        {{- range .Sections }}
+          {{- $allPages = $allPages | append .RegularPages }}
+        {{- end }}
+      {{- end }}
+
+      {{/* Sort: difficult first, then by ease (lowest first), then by lapses (highest first) */}}
+      {{- $difficult := where $allPages ".Params.difficult" true }}
+      {{- $ok := where $allPages ".Params.difficult" "ne" true }}
+      {{- $difficult = sort $difficult ".Params.ease" "asc" }}
+      {{- $ok = sort $ok ".Params.ease" "asc" }}
+
+      {{- range $difficult }}
+      <div class="card-item struggling" data-deck="{{ .Parent.File.ContentBaseName }}" data-title="{{ lower .Title }}" data-summary="{{ lower .Params.summary }}">
+        <div class="card-header">
+          <div class="card-title-row">
+            <span class="card-title">{{ .Title }}</span>
+            <span class="difficult-badge">Needs Work</span>
+            <span class="card-meta">{{ with .Params.reading }}{{ . }} · {{ end }}{{ .Params.meaning }}</span>
+          </div>
+          <div class="card-stats">
+            {{ with .Params.lapses }}<span class="stat stat-bad">{{ . }} lapse{{ if ne . 1 }}s{{ end }}</span>{{ end }}
+            {{ with .Params.ease }}<span class="stat">{{ math.Round (div (float .) 10) }}%</span>{{ end }}
+            {{ with .Params.interval }}<span class="stat">{{ . }}d</span>{{ end }}
+          </div>
+        </div>
+        <div class="card-body">
+          {{ .Content }}
+        </div>
+      </div>
+      {{- end }}
+
+      {{- range $ok }}
+      <div class="card-item" data-deck="{{ .Parent.File.ContentBaseName }}" data-title="{{ lower .Title }}" data-summary="{{ lower .Params.summary }}">
+        <div class="card-header">
+          <div class="card-title-row">
+            <span class="card-title">{{ .Title }}</span>
+            <span class="card-meta">{{ with .Params.reading }}{{ . }} · {{ end }}{{ .Params.meaning }}{{ with .Params.keyword }} · {{ . }}{{ end }}</span>
+          </div>
+          <div class="card-stats">
+            {{ with .Params.reps }}<span class="stat">{{ . }} review{{ if ne . 1 }}s{{ end }}</span>{{ end }}
+            {{ with .Params.ease }}<span class="stat">{{ math.Round (div (float .) 10) }}%</span>{{ end }}
+            {{ with .Params.interval }}<span class="stat">{{ . }}d</span>{{ end }}
+          </div>
+        </div>
+        <div class="card-body">
+          {{ .Content }}
+        </div>
+      </div>
+      {{- end }}
+    </div>
+
+    <p class="card-count" id="card-count"></p>
+  </div>
 {{ end }}
