@@ -1,4 +1,4 @@
-baseURL = 'https://example.org/'
+baseURL = 'https://mittonface.github.io/anki-friend/'
 languageCode = 'en-us'
 title = 'Anki Friend'
 theme = 'anki-theme'
