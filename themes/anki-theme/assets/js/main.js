@@ -6,6 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Tap to reveal meaning on mobile
+  document.querySelectorAll('.card-meta').forEach(meta => {
+    meta.addEventListener('click', (e) => {
+      e.stopPropagation();
+      meta.classList.toggle('revealed');
+    });
+  });
+
   const searchInput = document.getElementById('search');
   const filterBtns = document.querySelectorAll('.filter-btn');
   const cards = document.querySelectorAll('.card-item');

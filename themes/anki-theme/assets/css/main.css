@@ -153,6 +153,15 @@ main {
 .card-meta {
   color: #888;
   font-size: 0.85rem;
+  background: #888;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.card-meta.revealed,
+.card-header:hover .card-meta {
+  background: transparent;
 }
 
 .card-stats {
