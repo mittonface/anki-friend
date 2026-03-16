@@ -294,9 +294,10 @@ def main():
 
     decks, notetypes, fields, notes, cards, reviews, again_rates = load_db(DB_PATH)
 
-    # Clear existing generated content (keep _index.md for homepage)
+    # Clear existing generated content (keep _index.md and random.md)
+    keep_files = {"_index.md", "random.md"}
     for item in CONTENT_DIR.iterdir():
-        if item.name == "_index.md":
+        if item.name in keep_files:
             continue
         if item.is_dir():
             shutil.rmtree(item)
