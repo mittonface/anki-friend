@@ -1,0 +1,70 @@
+{{ define "main" }}
+  <div class="dashboard">
+    <div class="random-header">
+      <h2>5 Random Cards to Review</h2>
+      <button class="filter-btn active" onclick="location.reload()">Shuffle</button>
+    </div>
+
+    <div id="card-list">
+      {{- $allPages := slice }}
+      {{- range .Site.Sections }}
+        {{- $allPages = $allPages | append .RegularPages }}
+        {{- range .Sections }}
+          {{- $allPages = $allPages | append .RegularPages }}
+        {{- end }}
+      {{- end }}
+
+      {{- $difficult := where $allPages ".Params.difficult" true }}
+      {{- $difficult = sort $difficult ".Params.ease" "asc" }}
+
+      {{- range $difficult }}
+      <div class="card-item struggling random-card" style="display:none;" data-deck="{{ .Parent.File.ContentBaseName }}">
+        <div class="card-header">
+          <div class="card-title-row">
+            <span class="card-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></span>
+            <span class="difficult-badge">Needs Work</span>
+            <span class="card-meta">{{ with .Params.reading }}{{ . }} · {{ end }}{{ .Params.meaning }}</span>
+          </div>
+          <div class="card-stats">
+            {{ with .Params.lapses }}<span class="stat stat-bad">{{ . }} lapse{{ if ne . 1 }}s{{ end }}</span>{{ end }}
+            {{ with .Params.ease }}<span class="stat">{{ math.Round (div (float .) 10) }}%</span>{{ end }}
+            {{ with .Params.interval }}<span class="stat">{{ . }}d</span>{{ end }}
+          </div>
+        </div>
+        <div class="card-body">
+          {{ .Content }}
+        </div>
+      </div>
+      {{- end }}
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const cards = Array.from(document.querySelectorAll('.random-card'));
+      // Fisher-Yates shuffle
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      cards.slice(0, 5).forEach(card => {
+        card.style.display = '';
+      });
+
+      // Card expand/collapse
+      document.querySelectorAll('.random-card .card-header').forEach(header => {
+        header.addEventListener('click', () => {
+          header.closest('.card-item').classList.toggle('open');
+        });
+      });
+
+      // Tap to reveal meaning
+      document.querySelectorAll('.random-card .card-meta').forEach(meta => {
+        meta.addEventListener('click', (e) => {
+          e.stopPropagation();
+          meta.classList.toggle('revealed');
+        });
+      });
+    })();
+  </script>
+{{ end }}

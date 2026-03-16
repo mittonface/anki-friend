@@ -252,6 +252,19 @@ main {
   padding-left: 1.25rem;
 }
 
+/* Random page */
+.random-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.random-header h2 {
+  margin: 0;
+  color: #fff;
+}
+
 /* Card count */
 .card-count {
   text-align: center;
