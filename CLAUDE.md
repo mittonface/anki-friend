@@ -31,6 +31,15 @@ Hugo is installed via Homebrew (v0.154.5, extended).
 - **Content**: `content/` — generated from Anki DB via `make generate` (not hand-authored); `_index.md` is the homepage
 - **Data pipeline**: `scripts/generate_content.py` — Python script that reads `data/collection.anki2` (SQLite), parses Anki notes/cards, and writes Hugo content files under `content/`. Uses `\x1f` field separator, strips HTML, slugifies deck/card names.
 
+## Syncing the Website
+
+When asked to "sync the website" or "sync from Anki", run these steps in order:
+
+1. `make sync-db` — copy the local Anki database into `data/`
+2. `make generate` — regenerate `content/` from the updated database
+3. Commit all changes in `content/` (message: "sync Anki progress and add new cards from Anki sync")
+4. `git push` — push to `main`, which triggers auto-deploy via GitHub Actions
+
 ## Deployment
 
 - GitHub Actions workflow (`.github/workflows/`) auto-deploys to GitHub Pages on push to `main`
