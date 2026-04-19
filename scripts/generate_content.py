@@ -295,7 +295,7 @@ def main():
     decks, notetypes, fields, notes, cards, reviews, again_rates = load_db(DB_PATH)
 
     # Clear existing generated content (keep _index.md and random.md)
-    keep_files = {"_index.md", "random.md"}
+    keep_files = {"_index.md", "random.md", "leech-practice.md"}
     for item in CONTENT_DIR.iterdir():
         if item.name in keep_files:
             continue
@@ -366,10 +366,10 @@ def main():
 
             content = build_card_content(note, field_names, notetype_name)
 
-            # Flag difficult cards: lapsed, low ease, or high again-rate
+            # Flag difficult cards: multiple lapses, significantly low ease, or high again-rate
             difficult = (
-                card["lapses"] >= 1
-                or card["ease"] < 2500
+                card["lapses"] >= 3
+                or card["ease"] < 2000
                 or again_rates.get(card["id"], 0) > 0.5
             )
 

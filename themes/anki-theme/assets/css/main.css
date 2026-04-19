@@ -337,6 +337,158 @@ article.card hr {
   font-size: 1rem;
 }
 
+/* Leech practice page */
+.practice-wrap {
+  padding: 1rem 0;
+}
+
+.practice-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem 0 1.25rem;
+}
+
+.flashcard {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-left: 4px solid #e94560;
+  border-radius: 10px;
+  min-height: 260px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+
+.flashcard:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.flashcard-front {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2rem 1.5rem;
+  text-align: center;
+}
+
+.flashcard-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.flashcard-deck {
+  color: #555;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flashcard-hint {
+  color: #444;
+  font-size: 0.8rem;
+  margin-top: 1.5rem;
+  transition: opacity 0.2s;
+}
+
+.flashcard.revealed .flashcard-hint {
+  opacity: 0;
+}
+
+.flashcard-back {
+  display: none;
+  padding: 0 1.5rem 1.25rem;
+  border-top: 1px solid #2a2a2a;
+  color: #ccc;
+  animation: fade-in 0.2s ease;
+}
+
+.flashcard.revealed .flashcard-back {
+  display: block;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fc-reading {
+  font-size: 1.1rem;
+  color: #aaa;
+  margin: 1rem 0 0.5rem;
+}
+
+.fc-content h3 {
+  color: #e94560;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 1rem 0 0.4rem;
+}
+
+.fc-content p {
+  margin: 0.4rem 0;
+}
+
+.fc-content b {
+  color: #fff;
+}
+
+.fc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.fc-content th,
+.fc-content td {
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.fc-content th {
+  color: #666;
+  font-weight: 600;
+}
+
+.fc-content hr {
+  border: none;
+  border-top: 1px solid #2a2a2a;
+  margin: 0.75rem 0;
+}
+
+.flashcard-stats {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.6rem 1.5rem;
+  border-top: 1px solid #1a1a1a;
+  background: #191919;
+}
+
+.practice-nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  gap: 0.5rem;
+}
+
+.practice-nav .filter-btn {
+  flex: 1;
+  text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .card-header {

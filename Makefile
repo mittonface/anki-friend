@@ -1,4 +1,4 @@
-.PHONY: serve build clean draft sync-db generate
+.PHONY: serve build clean draft sync-db generate sync
 
 serve:
 	hugo server
@@ -18,3 +18,6 @@ sync-db:
 
 generate:
 	python3 scripts/generate_content.py
+
+sync:
+	./scripts/sync.sh

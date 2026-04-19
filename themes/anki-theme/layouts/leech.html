@@ -1,0 +1,137 @@
+{{ define "main" }}
+  {{- $allPages := slice }}
+  {{- range .Site.Sections }}
+    {{- $allPages = $allPages | append .RegularPages }}
+    {{- range .Sections }}
+      {{- $allPages = $allPages | append .RegularPages }}
+    {{- end }}
+  {{- end }}
+  {{- $leeches := where $allPages ".Params.tags" "intersect" (slice "leech") }}
+  {{- $leeches = sort $leeches ".Params.lapses" "desc" }}
+
+  <div class="practice-wrap">
+    <div class="practice-top">
+      <div>
+        <h2 style="margin:0; color:#e94560;">Leech Practice</h2>
+        <p style="margin:0.25rem 0 0; color:#666; font-size:0.85rem;">{{ len $leeches }} cards · tap card to reveal · space/arrow keys to navigate</p>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span class="stat" id="progress-label">— / {{ len $leeches }}</span>
+        <button class="filter-btn" id="shuffle-btn">Shuffle</button>
+      </div>
+    </div>
+
+    <div id="flashcard" class="flashcard" tabindex="0">
+      <div class="flashcard-front">
+        <div class="flashcard-title" id="fc-title"></div>
+        <div class="flashcard-deck" id="fc-deck"></div>
+        <div class="flashcard-hint">tap to reveal</div>
+      </div>
+      <div class="flashcard-back" id="fc-back"></div>
+      <div class="flashcard-stats" id="fc-stats"></div>
+    </div>
+
+    <div class="practice-nav">
+      <button class="filter-btn" id="prev-btn">← Prev</button>
+      <button class="filter-btn active" id="next-btn">Next →</button>
+    </div>
+  </div>
+
+  <!-- Hidden card data -->
+  <div id="card-data" hidden>
+    {{- range $leeches }}
+    <div class="lc"
+         data-title="{{ .Title }}"
+         data-reading="{{ .Params.reading }}"
+         data-lapses="{{ .Params.lapses }}"
+         data-ease="{{ .Params.ease }}"
+         data-deck="{{ .Parent.Title }}">
+      <div class="lc-content">{{ .Content }}</div>
+    </div>
+    {{- end }}
+  </div>
+
+  <script>
+    (function() {
+      const raw = Array.from(document.querySelectorAll('#card-data .lc'));
+
+      function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      let cards = shuffle(raw);
+      let idx = 0;
+      let revealed = false;
+
+      const fcTitle    = document.getElementById('fc-title');
+      const fcDeck     = document.getElementById('fc-deck');
+      const fcBack     = document.getElementById('fc-back');
+      const fcStats    = document.getElementById('fc-stats');
+      const flashcard  = document.getElementById('flashcard');
+      const progressEl = document.getElementById('progress-label');
+
+      function render() {
+        const card    = cards[idx];
+        const title   = card.dataset.title;
+        const reading = card.dataset.reading;
+        const lapses  = parseInt(card.dataset.lapses) || 0;
+        const ease    = parseInt(card.dataset.ease) || 0;
+        const deck    = card.dataset.deck;
+        const content = card.querySelector('.lc-content').innerHTML;
+
+        progressEl.textContent = `${idx + 1} / ${cards.length}`;
+        fcTitle.textContent    = title;
+        fcDeck.textContent     = deck;
+
+        let backHTML = '';
+        if (reading) backHTML += `<div class="fc-reading">${reading}</div>`;
+        backHTML += `<div class="fc-content">${content}</div>`;
+        fcBack.innerHTML = backHTML;
+
+        let statsHTML = '';
+        if (lapses) statsHTML += `<span class="stat stat-bad">${lapses} lapse${lapses !== 1 ? 's' : ''}</span>`;
+        if (ease > 0) statsHTML += `<span class="stat">${Math.round(ease / 10)}% ease</span>`;
+        fcStats.innerHTML = statsHTML;
+
+        revealed = false;
+        flashcard.classList.remove('revealed');
+      }
+
+      function reveal() {
+        if (revealed) return;
+        revealed = true;
+        flashcard.classList.add('revealed');
+      }
+
+      function goNext() { idx = (idx + 1) % cards.length; render(); }
+      function goPrev() { idx = (idx - 1 + cards.length) % cards.length; render(); }
+
+      flashcard.addEventListener('click', reveal);
+
+      document.getElementById('next-btn').addEventListener('click', (e) => { e.stopPropagation(); goNext(); });
+      document.getElementById('prev-btn').addEventListener('click', (e) => { e.stopPropagation(); goPrev(); });
+      document.getElementById('shuffle-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        cards = shuffle(raw);
+        idx = 0;
+        render();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'l') { goNext(); }
+        else if (e.key === 'ArrowLeft'  || e.key === 'h') { goPrev(); }
+        else if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          revealed ? goNext() : reveal();
+        }
+      });
+
+      render();
+    })();
+  </script>
+{{ end }}
