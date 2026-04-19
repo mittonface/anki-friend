@@ -295,7 +295,7 @@ def main():
     decks, notetypes, fields, notes, cards, reviews, again_rates = load_db(DB_PATH)
 
     # Clear existing generated content (keep _index.md and random.md)
-    keep_files = {"_index.md", "random.md", "leech-practice.md"}
+    keep_files = {"_index.md", "random.md", "leech-practice.md", "practice.md"}
     for item in CONTENT_DIR.iterdir():
         if item.name in keep_files:
             continue

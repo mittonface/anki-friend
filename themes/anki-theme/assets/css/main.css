@@ -489,6 +489,169 @@ article.card hr {
   text-align: center;
 }
 
+/* Sentence practice page */
+.sp-panel {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sp-label {
+  color: #aaa;
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.sp-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sp-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.sp-input:focus {
+  border-color: #e94560;
+}
+
+.sp-note {
+  margin: 0.5rem 0 0;
+  color: #555;
+  font-size: 0.75rem;
+}
+
+#practice-card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-left: 4px solid #e94560;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.pc-sentence-box {
+  min-height: 4rem;
+  margin-bottom: 1.25rem;
+}
+
+.pc-loading {
+  color: #555;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.pc-english {
+  font-size: 1.35rem;
+  color: #fff;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.pc-target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.75rem;
+  background: #181818;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.pc-target-label {
+  color: #555;
+}
+
+.pc-word {
+  color: #e94560;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.pc-hint {
+  color: #aaa;
+}
+
+.practice-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #181818;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1.1rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.practice-input:focus {
+  border-color: #e94560;
+}
+
+.pc-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Feedback panel */
+.feedback-panel {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.fb-score {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.fb-row {
+  margin-bottom: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.fb-label {
+  color: #555;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.5rem;
+}
+
+.fb-val {
+  color: #fff;
+}
+
+.fb-feedback {
+  color: #ccc;
+  line-height: 1.5;
+  margin: 0.75rem 0;
+}
+
+.fb-notes {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .card-header {

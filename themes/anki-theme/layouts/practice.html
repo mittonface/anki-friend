@@ -1,0 +1,297 @@
+{{ define "main" }}
+  {{- $kaishi := where .Site.RegularPages "Section" "kaishi-15k" }}
+  {{- $review     := where $kaishi ".Params.state" "review" }}
+  {{- $learning   := where $kaishi ".Params.state" "learning" }}
+  {{- $relearning := where $kaishi ".Params.state" "relearning" }}
+  {{- $reviewCount   := len $review }}
+  {{- $learningCount := add (len $learning) (len $relearning) }}
+  {{- $allCards := $review | append $learning | append $relearning }}
+
+  <div class="practice-wrap">
+    <div class="practice-top">
+      <div>
+        <h2 style="margin:0; color:#e94560;">Sentence Practice</h2>
+        <p style="margin:0.25rem 0 0; color:#666; font-size:0.85rem;">
+          {{ $reviewCount }} in review · {{ $learningCount }} learning · translate English → Japanese
+        </p>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span class="stat" id="progress-label">0 done</span>
+        <button class="filter-btn" id="settings-btn">API Key</button>
+      </div>
+    </div>
+
+    <div id="settings-panel" class="sp-panel" style="display:none;">
+      <label for="api-key-input" class="sp-label">Anthropic API Key</label>
+      <div class="sp-row">
+        <input type="password" id="api-key-input" class="sp-input" placeholder="sk-ant-...">
+        <button class="filter-btn active" id="save-key-btn">Save</button>
+      </div>
+      <p class="sp-note">Stored in localStorage only. Sent only to Anthropic's API.</p>
+    </div>
+
+    <div id="practice-card">
+      <div class="pc-sentence-box">
+        <div id="pc-loading" class="pc-loading">Generating sentence…</div>
+        <div id="pc-english" class="pc-english" style="display:none;"></div>
+      </div>
+      <div class="pc-target-row">
+        <span class="pc-target-label">Target word:</span>
+        <span id="pc-word" class="pc-word"></span>
+        <button id="reveal-hint-btn" class="filter-btn" style="font-size:0.75rem; padding:0.25rem 0.6rem; margin-left:auto;">Show hint</button>
+        <span id="pc-hint" class="pc-hint" style="display:none;"></span>
+      </div>
+      <textarea id="answer-input" class="practice-input" placeholder="Type your Japanese translation… (Ctrl+Enter to submit)" rows="3"></textarea>
+      <div class="pc-actions">
+        <button class="filter-btn active" id="submit-btn" style="flex:1;" disabled>Check Translation</button>
+        <button class="filter-btn" id="skip-btn">Skip →</button>
+      </div>
+    </div>
+
+    <div id="feedback-panel" class="feedback-panel" style="display:none;">
+      <div id="feedback-content"></div>
+      <button class="filter-btn active" id="next-btn" style="width:100%; margin-top:1rem; padding:0.75rem;">Next Card →</button>
+    </div>
+  </div>
+
+  <div id="card-data" hidden>
+    {{- range $allCards }}
+    <div class="pc-card"
+         data-title="{{ .Title }}"
+         data-reading="{{ .Params.reading }}"
+         data-meaning="{{ .Params.meaning }}"
+         data-state="{{ .Params.state }}"></div>
+    {{- end }}
+  </div>
+
+  <script>
+  (function () {
+    const API_URL       = 'https://api.anthropic.com/v1/messages';
+    const MODEL_FAST    = 'claude-haiku-4-5-20251001';   // sentence generation
+    const MODEL_EVAL    = 'claude-sonnet-4-6';            // translation evaluation
+
+    const rawCards = Array.from(document.querySelectorAll('#card-data .pc-card')).map(el => ({
+      title:   el.dataset.title,
+      reading: el.dataset.reading,
+      meaning: el.dataset.meaning,
+      state:   el.dataset.state,
+    }));
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    const reviewCards   = shuffle(rawCards.filter(c => c.state === 'review'));
+    const learningCards = shuffle(rawCards.filter(c => c.state === 'learning' || c.state === 'relearning'));
+    let queue = [...reviewCards, ...learningCards];
+    let qIdx  = 0;
+    let doneCount = 0;
+    let currentSentence = '';
+    let currentCard     = null;
+
+    const progressEl      = document.getElementById('progress-label');
+    const loadingEl       = document.getElementById('pc-loading');
+    const englishEl       = document.getElementById('pc-english');
+    const wordEl          = document.getElementById('pc-word');
+    const hintEl          = document.getElementById('pc-hint');
+    const revealBtn       = document.getElementById('reveal-hint-btn');
+    const answerInput     = document.getElementById('answer-input');
+    const submitBtn       = document.getElementById('submit-btn');
+    const skipBtn         = document.getElementById('skip-btn');
+    const practiceCard    = document.getElementById('practice-card');
+    const feedbackPanel   = document.getElementById('feedback-panel');
+    const feedbackContent = document.getElementById('feedback-content');
+    const nextBtn         = document.getElementById('next-btn');
+    const settingsBtn     = document.getElementById('settings-btn');
+    const settingsPanel   = document.getElementById('settings-panel');
+    const apiKeyInput     = document.getElementById('api-key-input');
+    const saveKeyBtn      = document.getElementById('save-key-btn');
+
+    function getKey() { return localStorage.getItem('anthropic_api_key') || ''; }
+    function setKey(k) { localStorage.setItem('anthropic_api_key', k.trim()); }
+
+    apiKeyInput.value = getKey();
+
+    settingsBtn.addEventListener('click', () => {
+      settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    saveKeyBtn.addEventListener('click', () => {
+      setKey(apiKeyInput.value);
+      settingsPanel.style.display = 'none';
+      if (!currentSentence) loadCard();
+    });
+
+    revealBtn.addEventListener('click', () => {
+      hintEl.style.display    = 'inline';
+      revealBtn.style.display = 'none';
+    });
+
+    async function callClaude(messages, maxTokens, model) {
+      const key = getKey();
+      if (!key) {
+        settingsPanel.style.display = 'block';
+        apiKeyInput.focus();
+        throw new Error('No API key — enter one above');
+      }
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({ model, max_tokens: maxTokens, messages }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API error ${res.status}`);
+      }
+      return (await res.json()).content[0].text;
+    }
+
+    async function loadCard() {
+      if (qIdx >= queue.length) {
+        qIdx  = 0;
+        queue = [...shuffle(reviewCards), ...shuffle(learningCards)];
+      }
+      currentCard = queue[qIdx++];
+
+      hintEl.style.display        = 'none';
+      revealBtn.style.display     = 'inline';
+      answerInput.value           = '';
+      submitBtn.disabled          = true;
+      submitBtn.textContent       = 'Check Translation';
+      feedbackPanel.style.display = 'none';
+      practiceCard.style.display  = 'block';
+      englishEl.style.display     = 'none';
+      loadingEl.style.display     = 'block';
+      loadingEl.textContent       = 'Generating sentence…';
+      currentSentence             = '';
+
+      wordEl.textContent = currentCard.title;
+      hintEl.textContent = `${currentCard.reading} — ${currentCard.meaning}`;
+      progressEl.textContent = `${doneCount} done`;
+
+      try {
+        const sentence = await callClaude([{
+          role: 'user',
+          content: `Create a simple English sentence (6–12 words) for a beginner Japanese learner to translate into Japanese. The sentence must naturally use the concept expressed by the Japanese word: ${currentCard.title} (${currentCard.reading}), meaning "${currentCard.meaning}".
+
+Rules:
+- Use only simple, everyday English vocabulary
+- Keep grammar clear and unambiguous
+- Return ONLY the sentence, no explanations or punctuation marks surrounding it`,
+        }], 80, MODEL_FAST);
+
+        currentSentence         = sentence.trim().replace(/^["']|["']$/g, '');
+        loadingEl.style.display = 'none';
+        englishEl.textContent   = currentSentence;
+        englishEl.style.display = 'block';
+        submitBtn.disabled      = false;
+        answerInput.focus();
+      } catch (err) {
+        loadingEl.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    async function submitAnswer() {
+      const answer = answerInput.value.trim();
+      if (!answer || submitBtn.disabled) return;
+
+      submitBtn.disabled    = true;
+      submitBtn.textContent = 'Checking…';
+
+      try {
+        const raw = await callClaude([{
+          role: 'user',
+          content: `A Japanese learner was asked to translate this English sentence:
+"${currentSentence}"
+
+Target vocabulary word: ${currentCard.title} (${currentCard.reading}) — "${currentCard.meaning}"
+Their Japanese translation: "${answer}"
+
+Evaluate and reply with valid JSON only (no markdown fences):
+{
+  "score": "correct" or "mostly_correct" or "needs_work",
+  "feedback": "1–2 sentence plain-English explanation of the overall quality",
+  "better_version": "an improved Japanese translation, or null if their answer is already correct",
+  "notes": ["up to 2 short specific grammar or word-choice tips"]
+}`,
+        }], 350, MODEL_EVAL);
+
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          const m = raw.match(/\{[\s\S]*\}/);
+          data = m ? JSON.parse(m[0]) : { score: 'needs_work', feedback: raw, better_version: null, notes: [] };
+        }
+
+        showFeedback(data);
+        doneCount++;
+        progressEl.textContent = `${doneCount} done`;
+      } catch (err) {
+        submitBtn.disabled    = false;
+        submitBtn.textContent = 'Check Translation';
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showFeedback(data) {
+      const colors = { correct: '#4caf50', mostly_correct: '#ff9800', needs_work: '#e94560' };
+      const labels = { correct: 'Correct ✓', mostly_correct: 'Mostly Correct', needs_work: 'Needs Work' };
+      const color  = colors[data.score] || '#aaa';
+      const label  = labels[data.score] || data.score;
+
+      let html = `<div class="fb-score" style="color:${color};">${label}</div>`;
+      html += `<div class="fb-row"><span class="fb-label">Your answer</span><span class="fb-val">${escHtml(answerInput.value.trim())}</span></div>`;
+      if (data.better_version) {
+        html += `<div class="fb-row"><span class="fb-label">Better</span><span class="fb-val">${escHtml(data.better_version)}</span></div>`;
+      }
+      html += `<div class="fb-feedback">${escHtml(data.feedback)}</div>`;
+      if (data.notes && data.notes.length) {
+        html += `<ul class="fb-notes">${data.notes.map(n => `<li>${escHtml(n)}</li>`).join('')}</ul>`;
+      }
+
+      feedbackContent.innerHTML  = html;
+      practiceCard.style.display  = 'none';
+      feedbackPanel.style.display = 'block';
+      nextBtn.focus();
+    }
+
+    skipBtn.addEventListener('click', loadCard);
+    submitBtn.addEventListener('click', submitAnswer);
+    nextBtn.addEventListener('click', loadCard);
+
+    answerInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        submitAnswer();
+      }
+    });
+
+    if (!getKey()) {
+      settingsPanel.style.display = 'block';
+      loadingEl.textContent       = 'Enter your Anthropic API key above to begin.';
+      wordEl.textContent          = '—';
+    } else {
+      loadCard();
+    }
+  })();
+  </script>
+{{ end }}
