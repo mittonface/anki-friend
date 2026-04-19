@@ -17,6 +17,8 @@
       </div>
       <div style="display:flex; gap:0.5rem; align-items:center;">
         <span class="stat" id="progress-label">0 done</span>
+        <button class="filter-btn" id="easy-btn">Super Easy</button>
+        <button class="filter-btn active" id="normal-btn">Normal</button>
         <button class="filter-btn" id="settings-btn">API Key</button>
       </div>
     </div>
@@ -91,6 +93,7 @@
     let doneCount = 0;
     let currentSentence = '';
     let currentCard     = null;
+    let difficulty      = 'normal'; // 'easy' | 'normal'
 
     const progressEl      = document.getElementById('progress-label');
     const loadingEl       = document.getElementById('pc-loading');
@@ -108,6 +111,8 @@
     const settingsPanel   = document.getElementById('settings-panel');
     const apiKeyInput     = document.getElementById('api-key-input');
     const saveKeyBtn      = document.getElementById('save-key-btn');
+    const easyBtn         = document.getElementById('easy-btn');
+    const normalBtn       = document.getElementById('normal-btn');
 
     function getKey() { return localStorage.getItem('anthropic_api_key') || ''; }
     function setKey(k) { localStorage.setItem('anthropic_api_key', k.trim()); }
@@ -122,6 +127,18 @@
       setKey(apiKeyInput.value);
       settingsPanel.style.display = 'none';
       if (!currentSentence) loadCard();
+    });
+
+    easyBtn.addEventListener('click', () => {
+      difficulty = 'easy';
+      easyBtn.classList.add('active');
+      normalBtn.classList.remove('active');
+    });
+
+    normalBtn.addEventListener('click', () => {
+      difficulty = 'normal';
+      normalBtn.classList.add('active');
+      easyBtn.classList.remove('active');
     });
 
     revealBtn.addEventListener('click', () => {
@@ -178,7 +195,15 @@
       try {
         const sentence = await callClaude([{
           role: 'user',
-          content: `Create a simple English sentence (6–12 words) for a beginner Japanese learner to translate into Japanese. The sentence must naturally use the concept expressed by the Japanese word: ${currentCard.title} (${currentCard.reading}), meaning "${currentCard.meaning}".
+          content: difficulty === 'easy'
+            ? `Create a very short, super simple English sentence (3–6 words) for a beginner Japanese learner to translate into Japanese. The sentence must use the concept expressed by the Japanese word: ${currentCard.title} (${currentCard.reading}), meaning "${currentCard.meaning}".
+
+Rules:
+- Extremely simple structure: subject + verb (+ object), nothing more
+- No adjectives, adverbs, or subordinate clauses
+- Use only the most basic everyday words (I, you, he, she, eat, go, see, buy, etc.)
+- Return ONLY the sentence, no explanations or punctuation marks surrounding it`
+            : `Create a simple English sentence (6–12 words) for a beginner Japanese learner to translate into Japanese. The sentence must naturally use the concept expressed by the Japanese word: ${currentCard.title} (${currentCard.reading}), meaning "${currentCard.meaning}".
 
 Rules:
 - Use only simple, everyday English vocabulary
