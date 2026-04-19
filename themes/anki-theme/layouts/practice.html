@@ -130,15 +130,19 @@
     });
 
     easyBtn.addEventListener('click', () => {
+      if (difficulty === 'easy') return;
       difficulty = 'easy';
       easyBtn.classList.add('active');
       normalBtn.classList.remove('active');
+      if (currentCard) generateSentence();
     });
 
     normalBtn.addEventListener('click', () => {
+      if (difficulty === 'normal') return;
       difficulty = 'normal';
       normalBtn.classList.add('active');
       easyBtn.classList.remove('active');
+      if (currentCard) generateSentence();
     });
 
     revealBtn.addEventListener('click', () => {
@@ -170,27 +174,16 @@
       return (await res.json()).content[0].text;
     }
 
-    async function loadCard() {
-      if (qIdx >= queue.length) {
-        qIdx  = 0;
-        queue = [...shuffle(reviewCards), ...shuffle(learningCards)];
-      }
-      currentCard = queue[qIdx++];
-
-      hintEl.style.display        = 'none';
-      revealBtn.style.display     = 'inline';
-      answerInput.value           = '';
-      submitBtn.disabled          = true;
-      submitBtn.textContent       = 'Check Translation';
-      feedbackPanel.style.display = 'none';
-      practiceCard.style.display  = 'block';
-      englishEl.style.display     = 'none';
-      loadingEl.style.display     = 'block';
-      loadingEl.textContent       = 'Generating sentence…';
-      currentSentence             = '';
-
-      hintEl.textContent = `${currentCard.title} (${currentCard.reading}) — ${currentCard.meaning}`;
-      progressEl.textContent = `${doneCount} done`;
+    async function generateSentence() {
+      hintEl.style.display    = 'none';
+      revealBtn.style.display = 'inline';
+      answerInput.value       = '';
+      submitBtn.disabled      = true;
+      submitBtn.textContent   = 'Check Translation';
+      englishEl.style.display = 'none';
+      loadingEl.style.display = 'block';
+      loadingEl.textContent   = 'Generating sentence…';
+      currentSentence         = '';
 
       try {
         const sentence = await callClaude([{
@@ -220,6 +213,21 @@ Rules:
       } catch (err) {
         loadingEl.textContent = `Error: ${err.message}`;
       }
+    }
+
+    async function loadCard() {
+      if (qIdx >= queue.length) {
+        qIdx  = 0;
+        queue = [...shuffle(reviewCards), ...shuffle(learningCards)];
+      }
+      currentCard = queue[qIdx++];
+
+      feedbackPanel.style.display = 'none';
+      practiceCard.style.display  = 'block';
+      hintEl.textContent = `${currentCard.title} (${currentCard.reading}) — ${currentCard.meaning}`;
+      progressEl.textContent = `${doneCount} done`;
+
+      await generateSentence();
     }
 
     async function submitAnswer() {
