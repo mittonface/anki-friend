@@ -569,16 +569,6 @@ article.card hr {
   font-size: 0.85rem;
 }
 
-.pc-target-label {
-  color: #555;
-}
-
-.pc-word {
-  color: #e94560;
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
 .pc-hint {
   color: #aaa;
 }

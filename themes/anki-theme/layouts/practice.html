@@ -36,9 +36,7 @@
         <div id="pc-english" class="pc-english" style="display:none;"></div>
       </div>
       <div class="pc-target-row">
-        <span class="pc-target-label">Target word:</span>
-        <span id="pc-word" class="pc-word"></span>
-        <button id="reveal-hint-btn" class="filter-btn" style="font-size:0.75rem; padding:0.25rem 0.6rem; margin-left:auto;">Show hint</button>
+        <button id="reveal-hint-btn" class="filter-btn" style="font-size:0.75rem; padding:0.25rem 0.6rem;">Show hint</button>
         <span id="pc-hint" class="pc-hint" style="display:none;"></span>
       </div>
       <textarea id="answer-input" class="practice-input" placeholder="Type your Japanese translation… (Ctrl+Enter to submit)" rows="3"></textarea>
@@ -97,7 +95,6 @@
     const progressEl      = document.getElementById('progress-label');
     const loadingEl       = document.getElementById('pc-loading');
     const englishEl       = document.getElementById('pc-english');
-    const wordEl          = document.getElementById('pc-word');
     const hintEl          = document.getElementById('pc-hint');
     const revealBtn       = document.getElementById('reveal-hint-btn');
     const answerInput     = document.getElementById('answer-input');
@@ -175,8 +172,7 @@
       loadingEl.textContent       = 'Generating sentence…';
       currentSentence             = '';
 
-      wordEl.textContent = currentCard.title;
-      hintEl.textContent = `${currentCard.reading} — ${currentCard.meaning}`;
+      hintEl.textContent = `${currentCard.title} (${currentCard.reading}) — ${currentCard.meaning}`;
       progressEl.textContent = `${doneCount} done`;
 
       try {
@@ -288,7 +284,6 @@ Evaluate and reply with valid JSON only (no markdown fences):
     if (!getKey()) {
       settingsPanel.style.display = 'block';
       loadingEl.textContent       = 'Enter your Anthropic API key above to begin.';
-      wordEl.textContent          = '—';
     } else {
       loadCard();
     }
