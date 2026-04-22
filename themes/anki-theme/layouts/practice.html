@@ -45,7 +45,9 @@
       <div class="pc-actions">
         <button class="filter-btn active" id="submit-btn" style="flex:1;" disabled>Check Translation</button>
         <button class="filter-btn" id="skip-btn">Skip →</button>
+        <button class="filter-btn" id="presubmit-breakdown-btn">Break it down →</button>
       </div>
+      <div id="presubmit-breakdown-panel" style="display:none;"></div>
     </div>
 
     <div id="feedback-panel" class="feedback-panel" style="display:none;">
@@ -186,6 +188,10 @@
       loadingEl.style.display = 'block';
       loadingEl.textContent   = 'Generating sentence…';
       currentSentence         = '';
+      presubmitBreakdownPanel.style.display = 'none';
+      presubmitBreakdownPanel.innerHTML     = '';
+      presubmitBreakdownBtn.disabled        = false;
+      presubmitBreakdownBtn.textContent     = 'Break it down →';
 
       try {
         const sentence = await callClaude([{
@@ -311,26 +317,77 @@ Evaluate and reply with valid JSON only (no markdown fences):
       nextBtn.focus();
     }
 
-    const breakdownBtn   = document.getElementById('breakdown-btn');
-    const breakdownPanel = document.getElementById('breakdown-panel');
+    const breakdownBtn          = document.getElementById('breakdown-btn');
+    const breakdownPanel        = document.getElementById('breakdown-panel');
+    const presubmitBreakdownBtn = document.getElementById('presubmit-breakdown-btn');
+    const presubmitBreakdownPanel = document.getElementById('presubmit-breakdown-panel');
     let lastCorrectJapanese = '';
 
-    breakdownBtn.addEventListener('click', async () => {
-      breakdownBtn.disabled   = true;
-      breakdownBtn.textContent = 'Breaking it down…';
-      breakdownPanel.style.display = 'none';
+    function renderBreakdown(data) {
+      let html = `<div class="bd-wrap">`;
+      html += `<div class="bd-overview">${escHtml(data.overview)}</div>`;
 
-      try {
-        const targetJapanese = lastCorrectJapanese || answerInput.value.trim();
-        const raw = await callClaude([{
-          role: 'user',
-          content: `You are a Japanese language teacher. A student is translating this English sentence into Japanese:
+      if (data.steps && data.steps.length) {
+        html += `<div class="bd-section-title">Step-by-step</div>`;
+        html += `<ol class="bd-steps">`;
+        for (const step of data.steps) {
+          html += `<li class="bd-step">
+            <div class="bd-step-title">${escHtml(step.title)}</div>
+            <div class="bd-mapping">
+              <span class="bd-en">${escHtml(step.english_part)}</span>
+              <span class="bd-arrow">→</span>
+              <span class="bd-jp">${escHtml(step.japanese_part)}</span>
+            </div>
+            <div class="bd-step-exp">${escHtml(step.explanation)}</div>
+          </li>`;
+        }
+        html += `</ol>`;
+      }
+
+      if (data.word_order_note) {
+        html += `<div class="bd-section-title">Word order</div>`;
+        html += `<div class="bd-word-order">${escHtml(data.word_order_note)}</div>`;
+      }
+
+      if (data.grammar_notes && data.grammar_notes.length) {
+        html += `<div class="bd-section-title">Grammar rules</div>`;
+        html += `<ul class="bd-grammar">`;
+        for (const g of data.grammar_notes) {
+          html += `<li><span class="bd-rule">${escHtml(g.rule)}</span> — ${escHtml(g.explanation)}</li>`;
+        }
+        html += `</ul>`;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    async function doBreakdown(panelEl, btnEl, targetJapanese) {
+      btnEl.disabled    = true;
+      btnEl.textContent = 'Breaking it down…';
+      panelEl.style.display = 'none';
+
+      // When called pre-submit we have no target translation — ask Claude to supply one
+      const hasTarget = !!targetJapanese;
+      const prompt = hasTarget
+        ? `You are a Japanese language teacher. A student is translating this English sentence into Japanese:
 
 English: "${currentSentence}"
 Japanese translation: "${targetJapanese}"
 Vocabulary focus: ${currentCard.title} (${currentCard.reading}) — "${currentCard.meaning}"
 
-Give a thorough step-by-step breakdown of HOW to arrive at this Japanese translation. Be as instructive as possible.
+Give a thorough step-by-step breakdown of HOW to arrive at this Japanese translation. Be as instructive as possible.`
+        : `You are a Japanese language teacher. A student wants to understand how to translate this English sentence into Japanese BEFORE attempting it:
+
+English: "${currentSentence}"
+Vocabulary focus: ${currentCard.title} (${currentCard.reading}) — "${currentCard.meaning}"
+
+First decide on the best natural Japanese translation, then give a thorough step-by-step breakdown of HOW to build it from scratch. Be as instructive as possible.`;
+
+      try {
+        const raw = await callClaude([{
+          role: 'user',
+          content: `${prompt}
 
 Reply with valid JSON only (no markdown fences):
 {
@@ -363,53 +420,24 @@ Reply with valid JSON only (no markdown fences):
 
         if (!data) throw new Error('Could not parse breakdown response');
 
-        let html = `<div class="bd-wrap">`;
-        html += `<div class="bd-overview">${escHtml(data.overview)}</div>`;
-
-        if (data.steps && data.steps.length) {
-          html += `<div class="bd-section-title">Step-by-step</div>`;
-          html += `<ol class="bd-steps">`;
-          for (const step of data.steps) {
-            html += `<li class="bd-step">
-              <div class="bd-step-title">${escHtml(step.title)}</div>
-              <div class="bd-mapping">
-                <span class="bd-en">${escHtml(step.english_part)}</span>
-                <span class="bd-arrow">→</span>
-                <span class="bd-jp">${escHtml(step.japanese_part)}</span>
-              </div>
-              <div class="bd-step-exp">${escHtml(step.explanation)}</div>
-            </li>`;
-          }
-          html += `</ol>`;
-        }
-
-        if (data.word_order_note) {
-          html += `<div class="bd-section-title">Word order</div>`;
-          html += `<div class="bd-word-order">${escHtml(data.word_order_note)}</div>`;
-        }
-
-        if (data.grammar_notes && data.grammar_notes.length) {
-          html += `<div class="bd-section-title">Grammar rules</div>`;
-          html += `<ul class="bd-grammar">`;
-          for (const g of data.grammar_notes) {
-            html += `<li><span class="bd-rule">${escHtml(g.rule)}</span> — ${escHtml(g.explanation)}</li>`;
-          }
-          html += `</ul>`;
-        }
-
-        html += `</div>`;
-
-        breakdownPanel.innerHTML      = html;
-        breakdownPanel.style.display  = 'block';
-        breakdownBtn.textContent      = 'Break it down →';
-        breakdownBtn.disabled         = false;
+        panelEl.innerHTML     = renderBreakdown(data);
+        panelEl.style.display = 'block';
       } catch (err) {
-        breakdownPanel.innerHTML     = `<div class="bd-error">Error: ${escHtml(err.message)}</div>`;
-        breakdownPanel.style.display = 'block';
-        breakdownBtn.textContent     = 'Break it down →';
-        breakdownBtn.disabled        = false;
+        panelEl.innerHTML     = `<div class="bd-error">Error: ${escHtml(err.message)}</div>`;
+        panelEl.style.display = 'block';
       }
-    });
+
+      btnEl.textContent = 'Break it down →';
+      btnEl.disabled    = false;
+    }
+
+    breakdownBtn.addEventListener('click', () =>
+      doBreakdown(breakdownPanel, breakdownBtn, lastCorrectJapanese || answerInput.value.trim())
+    );
+
+    presubmitBreakdownBtn.addEventListener('click', () =>
+      doBreakdown(presubmitBreakdownPanel, presubmitBreakdownBtn, null)
+    );
 
     skipBtn.addEventListener('click', loadCard);
     submitBtn.addEventListener('click', submitAnswer);
